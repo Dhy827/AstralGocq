@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Mrs4s/go-cqhttp/coolq"
-	"github.com/Mrs4s/go-cqhttp/global"
-	"github.com/Mrs4s/go-cqhttp/modules/api"
-	"github.com/Mrs4s/go-cqhttp/pkg/onebot"
+	"github.com/ProtocolScience/AstralGocq/coolq"
+	"github.com/ProtocolScience/AstralGocq/global"
+	"github.com/ProtocolScience/AstralGocq/modules/api"
+	"github.com/ProtocolScience/AstralGocq/pkg/onebot"
 
 	"golang.org/x/time/rate"
 )

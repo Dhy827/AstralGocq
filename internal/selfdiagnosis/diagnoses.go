@@ -2,7 +2,7 @@
 package selfdiagnosis
 
 import (
-	"github.com/Mrs4s/MiraiGo/client"
+	"github.com/ProtocolScience/AstralGo/client"
 	log "github.com/sirupsen/logrus"
 )
 

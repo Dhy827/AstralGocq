@@ -18,11 +18,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 
-	"github.com/Mrs4s/MiraiGo/utils"
+	"github.com/ProtocolScience/AstralGo/utils"
 
-	"github.com/Mrs4s/go-cqhttp/internal/base"
-	"github.com/Mrs4s/go-cqhttp/internal/download"
-	"github.com/Mrs4s/go-cqhttp/modules/config"
+	"github.com/ProtocolScience/AstralGocq/internal/base"
+	"github.com/ProtocolScience/AstralGocq/internal/download"
+	"github.com/ProtocolScience/AstralGocq/modules/config"
 )
 
 type currentSignServer atomic.Pointer[config.SignServer]

@@ -9,15 +9,15 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 
-	//	"github.com/Mrs4s/go-cqhttp/internal/download"
+	//	"github.com/ProtocolScience/AstralGocq/internal/download"
 	"os"
 	"path"
 	"sync"
 	"time"
 
-	"github.com/Mrs4s/MiraiGo/binary"
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/wrapper"
+	"github.com/ProtocolScience/AstralGo/binary"
+	"github.com/ProtocolScience/AstralGo/client"
+	"github.com/ProtocolScience/AstralGo/wrapper"
 	para "github.com/fumiama/go-hide-param"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	//	"github.com/pkg/errors"
@@ -26,16 +26,16 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/term"
 
-	"github.com/Mrs4s/go-cqhttp/coolq"
-	"github.com/Mrs4s/go-cqhttp/db"
-	"github.com/Mrs4s/go-cqhttp/global"
-	"github.com/Mrs4s/go-cqhttp/global/terminal"
-	"github.com/Mrs4s/go-cqhttp/internal/base"
-	"github.com/Mrs4s/go-cqhttp/internal/cache"
+	"github.com/ProtocolScience/AstralGocq/coolq"
+	"github.com/ProtocolScience/AstralGocq/db"
+	"github.com/ProtocolScience/AstralGocq/global"
+	"github.com/ProtocolScience/AstralGocq/global/terminal"
+	"github.com/ProtocolScience/AstralGocq/internal/base"
+	"github.com/ProtocolScience/AstralGocq/internal/cache"
 
-	"github.com/Mrs4s/go-cqhttp/internal/selfupdate"
-	"github.com/Mrs4s/go-cqhttp/modules/servers"
-	"github.com/Mrs4s/go-cqhttp/server"
+	"github.com/ProtocolScience/AstralGocq/internal/selfupdate"
+	"github.com/ProtocolScience/AstralGocq/modules/servers"
+	"github.com/ProtocolScience/AstralGocq/server"
 )
 
 // 允许通过配置文件设置的状态列表

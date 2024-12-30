@@ -8,16 +8,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Mrs4s/MiraiGo/binary"
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/ProtocolScience/AstralGo/binary"
+	"github.com/ProtocolScience/AstralGo/client"
+	"github.com/ProtocolScience/AstralGo/message"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/Mrs4s/go-cqhttp/db"
-	"github.com/Mrs4s/go-cqhttp/global"
-	"github.com/Mrs4s/go-cqhttp/internal/base"
-	"github.com/Mrs4s/go-cqhttp/internal/cache"
-	"github.com/Mrs4s/go-cqhttp/internal/download"
+	"github.com/ProtocolScience/AstralGocq/db"
+	"github.com/ProtocolScience/AstralGocq/global"
+	"github.com/ProtocolScience/AstralGocq/internal/base"
+	"github.com/ProtocolScience/AstralGocq/internal/cache"
+	"github.com/ProtocolScience/AstralGocq/internal/download"
 )
 
 // ToFormattedMessage 将给定[]message.IMessageElement转换为通过coolq.SetMessageFormat所定义的消息上报格式

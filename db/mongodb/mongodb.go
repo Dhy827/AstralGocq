@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/yaml.v3"
 
-	"github.com/Mrs4s/go-cqhttp/db"
+	"github.com/ProtocolScience/AstralGocq/db"
 )
 
 type database struct {

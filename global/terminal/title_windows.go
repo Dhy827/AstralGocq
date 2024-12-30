@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/sys/windows"
 
-	"github.com/Mrs4s/go-cqhttp/internal/base"
+	"github.com/ProtocolScience/AstralGocq/internal/base"
 )
 
 func setConsoleTitle(title string) error {

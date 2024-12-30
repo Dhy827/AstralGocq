@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Mrs4s/MiraiGo/client"
+	"github.com/ProtocolScience/AstralGo/client"
 	"github.com/mattn/go-colorable"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"gopkg.ilharper.com/x/isatty"
 
-	"github.com/Mrs4s/go-cqhttp/global"
+	"github.com/ProtocolScience/AstralGocq/global"
 )
 
 var console = bufio.NewReader(os.Stdin)

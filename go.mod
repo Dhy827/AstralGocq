@@ -1,11 +1,11 @@
-module github.com/Mrs4s/go-cqhttp
+module github.com/ProtocolScience/AstralGocq
 
 go 1.20
 
 require (
 	github.com/FloatTech/sqlite v1.6.3
 	github.com/Microsoft/go-winio v0.6.2-0.20230724192519-b29bbd58a65a
-	github.com/Mrs4s/MiraiGo v0.0.0-20230823050531-a8213e127b2b
+	github.com/ProtocolScience/AstralGo v0.0.0-20241230230537-f198d39f1784
 	github.com/RomiChan/syncx v0.0.0-20221202055724-5f842c53020e
 	github.com/RomiChan/websocket v1.4.3-0.20220227141055-9b2c6168c9c5
 	github.com/fumiama/go-base16384 v1.7.0
@@ -67,3 +67,5 @@ require (
 	modernc.org/strutil v1.1.3 // indirect
 	modernc.org/token v1.0.1 // indirect
 )
+
+replace github.com/Mrs4s/MiraiGo => github.com/ProtocolScience/AstralGo v0.0.0-20230823050531-a8213e127b2b

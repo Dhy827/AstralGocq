@@ -12,22 +12,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Mrs4s/MiraiGo/binary"
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Mrs4s/MiraiGo/utils"
+	"github.com/ProtocolScience/AstralGo/binary"
+	"github.com/ProtocolScience/AstralGo/client"
+	"github.com/ProtocolScience/AstralGo/message"
+	"github.com/ProtocolScience/AstralGo/utils"
 	"github.com/RomiChan/syncx"
 	"github.com/pkg/errors"
 	"github.com/segmentio/asm/base64"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/image/webp"
 
-	"github.com/Mrs4s/go-cqhttp/db"
-	"github.com/Mrs4s/go-cqhttp/global"
-	"github.com/Mrs4s/go-cqhttp/internal/base"
-	"github.com/Mrs4s/go-cqhttp/internal/mime"
-	"github.com/Mrs4s/go-cqhttp/internal/msg"
-	"github.com/Mrs4s/go-cqhttp/pkg/onebot"
+	"github.com/ProtocolScience/AstralGocq/db"
+	"github.com/ProtocolScience/AstralGocq/global"
+	"github.com/ProtocolScience/AstralGocq/internal/base"
+	"github.com/ProtocolScience/AstralGocq/internal/mime"
+	"github.com/ProtocolScience/AstralGocq/internal/msg"
+	"github.com/ProtocolScience/AstralGocq/pkg/onebot"
 )
 
 // CQBot CQBot结构体,存储Bot实例相关配置

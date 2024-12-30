@@ -2,7 +2,7 @@
 package silk
 
 import (
-	"github.com/Mrs4s/go-cqhttp/internal/base"
+	"github.com/ProtocolScience/AstralGocq/internal/base"
 )
 
 func init() {
