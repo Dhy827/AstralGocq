@@ -900,9 +900,23 @@ func (bot *CQBot) makeImageOrVideoElem(elem msg.Element, video bool, sourceType 
 			_ = os.Remove(cacheFile)
 		}
 		{
-			r := download.Request{URL: f, Limit: maxSize}
-			if err := r.WriteToFileMultiThreading(cacheFile, thread); err != nil {
+			rkey, err := bot.Client.GetRKey()
+			if err != nil {
+				log.Warnf("Cannot Fetch RKey for download media.")
 				return nil, err
+			} else {
+				var requestUrl = f
+				if strings.HasPrefix(requestUrl, "https://multimedia.nt.qq.com.cn/") {
+					if sourceType == message.SourceGroup {
+						requestUrl = f + (*rkey)[message.BusinessGroupImage].RKey
+					} else {
+						requestUrl = f + (*rkey)[message.BusinessFriendImage].RKey
+					}
+				}
+				r := download.Request{URL: requestUrl, Limit: maxSize}
+				if err := r.WriteToFileMultiThreading(cacheFile, thread); err != nil {
+					return nil, err
+				}
 			}
 		}
 	useCacheFile:

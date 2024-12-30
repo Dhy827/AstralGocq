@@ -7,6 +7,8 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
+	"github.com/pkg/errors"
+
 	//	"github.com/Mrs4s/go-cqhttp/internal/download"
 	"os"
 	"path"
@@ -30,8 +32,7 @@ import (
 	"github.com/Mrs4s/go-cqhttp/global/terminal"
 	"github.com/Mrs4s/go-cqhttp/internal/base"
 	"github.com/Mrs4s/go-cqhttp/internal/cache"
-	//	"github.com/Mrs4s/go-cqhttp/internal/download"
-	"github.com/Mrs4s/go-cqhttp/internal/selfdiagnosis"
+
 	"github.com/Mrs4s/go-cqhttp/internal/selfupdate"
 	"github.com/Mrs4s/go-cqhttp/modules/servers"
 	"github.com/Mrs4s/go-cqhttp/server"
@@ -283,9 +284,14 @@ func LoginInteract() {
 					}
 				}
 			}
-			if err = cli.TokenLogin(token); err != nil {
-				_ = os.Remove("session.token")
-				log.Warnf("恢复会话失败: %v , 尝试使用正常流程登录.", err)
+			if err = cli.TokenLogin(token); err != nil { //然后判断一下这个err是否为ExchangeEmpResponseError错误
+				var exchangeEmpResponseError *client.ServerResponseError
+				if errors.As(err, &exchangeEmpResponseError) {
+					_ = os.Remove("session.token")
+					log.Warnf("恢复会话失败: %v , 尝试使用正常流程登录.", err)
+				} else {
+					log.Warnf("恢复会话失败: %v , 正在重试.", err)
+				}
 				time.Sleep(time.Second)
 				cli.Disconnect()
 				cli.Release()
@@ -342,7 +348,7 @@ func LoginInteract() {
 	}
 	var times uint = 1 // 重试次数
 	var reLoginLock sync.Mutex
-	cli.DisconnectedEvent.Subscribe(func(_ *client.QQClient, e *client.ClientDisconnectedEvent) {
+	cli.DisconnectedEvent.Subscribe(func(_ *client.QQClient, e *client.DisconnectedEvent) {
 		reLoginLock.Lock()
 		defer reLoginLock.Unlock()
 		times = 1
@@ -350,7 +356,12 @@ func LoginInteract() {
 			return
 		}
 		log.Warnf("Bot已离线: %v", e.Message)
-		time.Sleep(time.Second * time.Duration(base.Reconnect.Delay))
+		if !e.Reconnection {
+			log.Infof("当前登录已挂起，请按下回车重新登录！[Enter 继续]")
+			readLine()
+		} else {
+			time.Sleep(time.Second * time.Duration(base.Reconnect.Delay))
+		}
 		for {
 			if base.Reconnect.Disabled {
 				log.Warnf("未启用自动重连, 将退出.")
@@ -359,12 +370,14 @@ func LoginInteract() {
 			if times > base.Reconnect.MaxTimes && base.Reconnect.MaxTimes != 0 {
 				log.Fatalf("Bot重连次数超过限制, 停止")
 			}
-			times++
-			if base.Reconnect.Interval > 0 {
-				log.Warnf("将在 %v 秒后尝试重连. 重连次数：%v/%v", base.Reconnect.Interval, times, base.Reconnect.MaxTimes)
-				time.Sleep(time.Second * time.Duration(base.Reconnect.Interval))
-			} else {
-				time.Sleep(time.Second)
+			if e.Reconnection {
+				times++
+				if base.Reconnect.Interval > 0 {
+					log.Warnf("将在 %v 秒后尝试重连. 重连次数：%v/%v", base.Reconnect.Interval, base.Reconnect.MaxTimes, times)
+					time.Sleep(time.Second * time.Duration(base.Reconnect.Interval))
+				} else {
+					time.Sleep(time.Second)
+				}
 			}
 			if cli.Online.Load() {
 				log.Infof("登录已完成")
@@ -414,8 +427,8 @@ func LoginInteract() {
 //   - dump stack: syscall.SIGQUIT, syscall.SIGUSR1
 func WaitSignal() {
 	go func() {
-		selfupdate.CheckUpdate()
-		selfdiagnosis.NetworkDiagnosis(cli)
+		//selfupdate.CheckUpdate()
+		//selfdiagnosis.NetworkDiagnosis(cli)
 	}()
 
 	<-global.SetupMainSignalHandler()

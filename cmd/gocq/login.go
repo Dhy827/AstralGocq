@@ -196,10 +196,14 @@ func loginResponseProcessor(res *client.LoginResponse) error {
 			}
 			fallthrough
 		case client.UnsafeDeviceError:
-			log.Warnf("账号已开启设备锁，请前往 -> %v <- 验证后重启Bot.", res.VerifyUrl)
-			log.Infof("按 Enter 或等待 5s 后继续....")
-			readLineTimeout(time.Second * 5)
-			os.Exit(0)
+			log.Warnf("账号已开启设备锁，请前往 -> %v", res.VerifyUrl)
+			log.Infof("按 Enter 继续....")
+			readLine()
+			res, err = cli.PasswordLogin()
+			if err != nil {
+				return err
+			}
+			continue
 		case client.OtherLoginError, client.UnknownLoginError, client.TooManySMSRequestError:
 			msg := res.ErrorMessage
 			log.Warnf("登录失败: %v Code: %v", msg, res.Code)
@@ -219,7 +223,6 @@ func loginResponseProcessor(res *client.LoginResponse) error {
 }
 
 func getTicket(u string) string {
-	log.Warnf("遭遇滑块验证！")
 	log.Warnf("请前往该地址验证 -> %v ", u)
 	log.Warn("请输入ticket： (Enter 提交)")
 	return readLine()
