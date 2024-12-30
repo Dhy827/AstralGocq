@@ -13,6 +13,7 @@ jobs:
         run: |
           git version
           git clone "${{ github.event.repository.html_url }}" /home/runner/work/go-cqhttp/go-cqhttp
+          cd  /home/runner/work/go-cqhttp/go-cqhttp
           git checkout "${{ github.ref }}"
 
       - name: Set up Go
