@@ -2,9 +2,7 @@ package gocq
 
 import (
 	"bytes"
-	"crypto/hmac"
 	"crypto/md5"
-	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"net/http"
@@ -119,23 +117,6 @@ func asyncCheckServer(servers []config.SignServer) *config.SignServer {
 	}
 	wg.Wait()
 	return ss.get()
-}
-
-func generateSignature(data map[string]string, secretKey string) string {
-	// Convert map to POST body format
-	var body bytes.Buffer
-	for key, value := range data {
-		body.WriteString(fmt.Sprintf("%v=%v&", key, value))
-	}
-	bodyString := body.String()
-	bodyString = bodyString[:len(bodyString)-1] // Remove the last '&'
-
-	// Generate the HMAC-SHA256 signature
-	h := hmac.New(sha256.New, []byte(secretKey))
-	h.Write([]byte(bodyString))
-	signature := hex.EncodeToString(h.Sum(nil))
-
-	return signature
 }
 
 /*
