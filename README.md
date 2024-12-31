@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://ishkong.github.io/go-cqhttp-docs/">
-    <img src="winres/icon.png" width="200" height="200" alt="go-cqhttp">
+    <img src="https://avatars.githubusercontent.com/u/179220210?s=256&v=4" width="200" height="200" alt="go-cqhttp">
   </a>
 </p>
 
@@ -23,7 +23,7 @@ _✨ 基于 [Mirai](https://github.com/mamoe/mirai) 以及 [MiraiGo](https://git
   <a href="https://github.com/ProtocolScience/AstralGocq/releases">
     <img src="https://img.shields.io/github/v/release/ProtocolScience/AstralGocq?color=blueviolet&include_prereleases" alt="release">
   </a>
-<a href="https://app.fossa.com/projects/git%2Bgithub.com%2FMrs4s%2Fgo-cqhttp?ref=badge_shield" alt="FOSSA Status"><img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FMrs4s%2Fgo-cqhttp.svg?type=shield"/></a>
+<a href="https://app.fossa.com/projects/git%2Bgithub.com%2FProtocolScience%2FAstralGocq?ref=badge_shield" alt="FOSSA Status"><img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FMrs4s%2Fgo-cqhttp.svg?type=shield"/></a>
   <a href="https://github.com/howmanybots/onebot/blob/master/README.md">
     <img src="https://img.shields.io/badge/OneBot-v11-blue?style=flat&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABABAMAAABYR2ztAAAAIVBMVEUAAAAAAAADAwMHBwceHh4UFBQNDQ0ZGRkoKCgvLy8iIiLWSdWYAAAAAXRSTlMAQObYZgAAAQVJREFUSMftlM0RgjAQhV+0ATYK6i1Xb+iMd0qgBEqgBEuwBOxU2QDKsjvojQPvkJ/ZL5sXkgWrFirK4MibYUdE3OR2nEpuKz1/q8CdNxNQgthZCXYVLjyoDQftaKuniHHWRnPh2GCUetR2/9HsMAXyUT4/3UHwtQT2AggSCGKeSAsFnxBIOuAggdh3AKTL7pDuCyABcMb0aQP7aM4AnAbc/wHwA5D2wDHTTe56gIIOUA/4YYV2e1sg713PXdZJAuncdZMAGkAukU9OAn40O849+0ornPwT93rphWF0mgAbauUrEOthlX8Zu7P5A6kZyKCJy75hhw1Mgr9RAUvX7A3csGqZegEdniCx30c3agAAAABJRU5ErkJggg==" alt="cqhttp">
   </a>
@@ -46,7 +46,7 @@ _✨ 基于 [Mirai](https://github.com/mamoe/mirai) 以及 [MiraiGo](https://git
 </p>
 
 ## 兼容性
-go-cqhttp 兼容 [OneBot-v11](https://github.com/botuniverse/onebot-11) 绝大多数内容，并在其基础上做了一些扩展，详情请看的文档。
+Astral-Gocq 兼容 [OneBot-v11](https://github.com/botuniverse/onebot-11) 绝大多数内容，并在其基础上做了一些扩展，详情请看的文档。
 
 由于迁移至NT协议，不确定某些event是否失效，如果出现问题，请提供debug日志反馈。
 
