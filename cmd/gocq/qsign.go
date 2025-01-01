@@ -167,11 +167,12 @@ func isWebSocketAvailable(url string) bool {
 		HandshakeTimeout: 3 * time.Second,
 	}
 
-	conn, _, err := dialer.Dial(url, nil)
+	conn, resp, err := dialer.Dial(url, nil)
 	if err != nil {
 		log.Warnf("WebSocket check failed for %v, error: %v", url, err)
 		return false
 	}
+	_ = resp.Body.Close()
 	_ = conn.Close()
 
 	// Optionally, you can send a ping or some message to verify further
