@@ -125,12 +125,13 @@ func (m *SignServerManager) asyncCheckServers(servers []config.SignServer) *conf
 				defer wg.Done()
 				if isServerAvailable(server.URL) {
 					log.Infof("Checking server: %v (%v/%v) ok!", server.URL, i+1, len(servers))
-					once.Do(func() {
-						m.Set(&server)
-						log.Infof("Using server url=%v, key=%v, auth=%v", server.URL, server.Key, server.Authorization)
-						m.client.signRegister()
-						success = true
-					})
+					m.Set(&server)
+					if m.client.signRegister() {
+						once.Do(func() {
+							log.Infof("Using server url=%v, key=%v, auth=%v", server.URL, server.Key, server.Authorization)
+							success = true
+						})
+					}
 				} else {
 					log.Warnf("Checking server: %v (%v/%v) failed!", server.URL, i+1, len(servers))
 				}
@@ -221,23 +222,20 @@ func NewSignClient(c *client.QQClient) *SignClient {
 }
 
 func (c *SignClient) requestSignServer(action string, data map[string]string) (string, []byte, error) {
-
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded"}
-
 	signServer, err := c.manager.GetAvailableSignServer()
 	if err != nil || signServer == nil || len(signServer.URL) == 0 {
 		log.Warnf("Error getting sign server: %v, using main server", err)
 		c.manager.IncrementErrorCount()
 		signServer = &base.SignServers[0]
 	}
-
 	data["key"] = signServer.Key
 	data["uin"] = strconv.FormatInt(base.Account.Uin, 10)
-	data["qua"] = c.client.Device().Protocol.Version().QUA
+
+	data["qua"] = device.Protocol.Version().QUA
 	data["android_id"] = utils.B2S(device.AndroidId)
 	data["guid"] = hex.EncodeToString(device.Guid)
 	data["qimei36"] = device.QImei36
-
 	if strings.HasPrefix(signServer.URL, "ws://") || strings.HasPrefix(signServer.URL, "wss://") {
 		a, e := c.requestWebSocket(signServer, action, data)
 		if e != nil { //try again
@@ -245,7 +243,6 @@ func (c *SignClient) requestSignServer(action string, data map[string]string) (s
 		}
 		return signServer.URL, a, e
 	}
-
 	//HTTP ABOVE
 	urlAddress := strings.TrimSuffix(signServer.URL, "/") + "/" + strings.TrimPrefix(action, "/")
 	auth := signServer.Authorization
@@ -322,9 +319,11 @@ func (c *SignClient) requestWebSocket(signServer *config.SignServer, action stri
 
 	// Register the request
 	c.requestMu.Lock()
-	c.requests[echoUUID] = responseChan
 	// Send message
 	err := c.ws.WriteJSON(message)
+	if err == nil {
+		c.requests[echoUUID] = responseChan
+	}
 	c.requestMu.Unlock()
 
 	if err != nil {
@@ -332,17 +331,27 @@ func (c *SignClient) requestWebSocket(signServer *config.SignServer, action stri
 		c.ws = nil // Reset connection
 		return nil, err
 	}
-
-	// Wait for the response
-	response := <-responseChan
-
-	// Extract payload
-	payload, err := json.Marshal(response["payload"])
-	if err != nil {
-		return nil, err
+	// Set a timeout duration
+	timeout := time.Duration(base.SignServerTimeout) * time.Second
+	select {
+	case response := <-responseChan:
+		// Process the response
+		c.requestMu.Lock()
+		delete(c.requests, echoUUID)
+		c.requestMu.Unlock()
+		// Extract payload
+		payload, err := json.Marshal(response["payload"])
+		if err != nil {
+			return nil, err
+		}
+		return payload, nil
+	case <-time.After(timeout):
+		// Handle the timeout case
+		c.requestMu.Lock()
+		delete(c.requests, echoUUID)
+		c.requestMu.Unlock()
+		return nil, fmt.Errorf("operation timed out after %v", timeout)
 	}
-
-	return payload, nil
 }
 
 func (c *SignClient) listenResponses() {
@@ -363,7 +372,6 @@ func (c *SignClient) listenResponses() {
 		c.requestMu.Lock()
 		if responseChan, found := c.requests[echo]; found {
 			responseChan <- response
-			delete(c.requests, echo) // Clean up the map
 		}
 		c.requestMu.Unlock()
 	}
@@ -453,21 +461,26 @@ func (c *SignClient) SignWhiteList() (whitelist []string, err error) {
 	}
 	return nil, errors.New("get whitelist failed")
 }
-func (c *SignClient) signRegister() {
+func (c *SignClient) signRegister() bool {
 	signServer, resp, err := c.requestSignServer(
 		"register",
 		map[string]string{},
 	)
 	if err != nil {
 		log.Warnf("Error registering QQ instance: %v. server: %v", err, signServer)
-		return
+		return false
 	}
 	msg := gjson.GetBytes(resp, "msg")
+	if !msg.Exists() {
+		log.Warn("Error registering QSign")
+		return false
+	}
 	if gjson.GetBytes(resp, "code").Int() != 0 {
 		log.Warnf("Error registering QQ instance: %v. server: %v", msg, signServer)
-		return
+		return false
 	}
 	log.Infof("Successfully registered QQ instance %v: %v", base.Account.Uin, msg)
+	return true
 }
 
 // Energy requests energy data from the sign server.

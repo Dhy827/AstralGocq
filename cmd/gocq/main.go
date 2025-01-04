@@ -404,22 +404,24 @@ func LoginInteract() {
 				break
 			}
 			log.Warnf("尝试重连...")
-			err := cli.TokenLogin(base.AccountToken)
-			if err == nil {
+			tokenLoginErr := cli.TokenLogin(base.AccountToken)
+
+			if tokenLoginErr == nil {
 				saveToken()
 				return
-			}
-			log.Warnf("快速重连失败: %v", err)
-			if isQRCodeLogin {
-				log.Fatalf("快速重连失败, 扫码登录无法恢复会话.")
-			}
-			log.Warnf("快速重连失败, 尝试普通登录. 这可能是因为其他端强行T下线导致的.")
-			time.Sleep(time.Second)
-			if err := commonLogin(); err != nil {
-				log.Errorf("登录时发生致命错误: %v", err)
 			} else {
-				saveToken()
-				break
+				var exchangeEmpResponseError *client.ServerResponseError
+				if errors.As(tokenLoginErr, &exchangeEmpResponseError) {
+					log.Warnf("快速重连失败: %v, 尝试普通登录.", tokenLoginErr)
+					if commonErr := commonLogin(); commonErr != nil {
+						log.Fatalf("登录时发生致命错误: %v", commonErr)
+					} else {
+						saveToken()
+						break
+					}
+				} else {
+					log.Warnf("快速重连失败: %v, 正在重试.", err)
+				}
 			}
 		}
 	})

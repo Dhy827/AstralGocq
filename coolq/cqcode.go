@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/ProtocolScience/AstralGo/client/nt"
 	"io"
 	"math/rand"
 	"net/url"
@@ -909,9 +910,9 @@ func (bot *CQBot) makeImageOrVideoElem(elem msg.Element, video bool, sourceType 
 				}
 
 				if sourceType == message.SourceGroup {
-					requestURL = f + (*rKey)[message.BusinessGroupImage].RKey
+					requestURL = f + (*rKey)[nt.GroupImageRKey].RKey
 				} else {
-					requestURL = f + (*rKey)[message.BusinessFriendImage].RKey
+					requestURL = f + (*rKey)[nt.FriendImageRKey].RKey
 				}
 			}
 			r := download.Request{URL: requestURL, Limit: maxSize}
@@ -1038,7 +1039,7 @@ func (bot *CQBot) readImageCache(b []byte, sourceType message.SourceType) (messa
 	var rsp message.IMessageElement
 	switch sourceType { // nolint:exhaustive
 	case message.SourceGroup:
-		rsp, err = bot.Client.QueryGroupImage(int64(rand.Uint32()), hash, size)
+		rsp, err = bot.Client.QueryImage(bot.Client.GroupList[0].Code, 0, hash, size)
 	case message.SourceGuildChannel:
 		if len(bot.Client.GuildService.Guilds) == 0 {
 			err = errors.New("cannot query guild image: not any joined guild")
@@ -1047,7 +1048,7 @@ func (bot *CQBot) readImageCache(b []byte, sourceType message.SourceType) (messa
 		guild := bot.Client.GuildService.Guilds[0]
 		rsp, err = bot.Client.GuildService.QueryImage(guild.GuildId, guild.Channels[0].ChannelId, hash, uint64(size))
 	default:
-		rsp, err = bot.Client.QueryFriendImage(int64(rand.Uint32()), hash, size)
+		rsp, err = bot.Client.QueryImage(0, bot.Client.Uin, hash, size)
 	}
 	if err != nil && imageURL != "" {
 		var elem msg.Element
