@@ -350,7 +350,7 @@ func (c *SignClient) requestWebSocket(signServer *config.SignServer, action stri
 		c.requestMu.Lock()
 		delete(c.requests, echoUUID)
 		c.requestMu.Unlock()
-		return nil, fmt.Errorf("operation timed out after %v", timeout)
+		return nil, errors.New("operation timed out in qsign websocket request")
 	}
 }
 

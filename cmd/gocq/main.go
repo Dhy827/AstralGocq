@@ -405,23 +405,20 @@ func LoginInteract() {
 			}
 			log.Warnf("尝试重连...")
 			tokenLoginErr := cli.TokenLogin(base.AccountToken)
-
 			if tokenLoginErr == nil {
 				saveToken()
 				return
-			} else {
-				var exchangeEmpResponseError *client.ServerResponseError
-				if errors.As(tokenLoginErr, &exchangeEmpResponseError) {
-					log.Warnf("快速重连失败: %v, 尝试普通登录.", tokenLoginErr)
-					if commonErr := commonLogin(); commonErr != nil {
-						log.Fatalf("登录时发生致命错误: %v", commonErr)
-					} else {
-						saveToken()
-						break
-					}
-				} else {
-					log.Warnf("快速重连失败: %v, 正在重试.", err)
+			}
+			var exchangeEmpResponseError *client.ServerResponseError
+			if errors.As(tokenLoginErr, &exchangeEmpResponseError) {
+				log.Warnf("快速重连失败: %v, 尝试普通登录.", tokenLoginErr)
+				if commonErr := commonLogin(); commonErr != nil {
+					log.Fatalf("登录时发生致命错误: %v", commonErr)
 				}
+				saveToken()
+				break
+			} else {
+				log.Warnf("快速重连失败: %v, 正在重试.", err)
 			}
 		}
 	})
