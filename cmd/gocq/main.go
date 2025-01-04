@@ -417,9 +417,8 @@ func LoginInteract() {
 				}
 				saveToken()
 				break
-			} else {
-				log.Warnf("快速重连失败: %v, 正在重试.", err)
 			}
+			log.Warnf("快速重连失败: %v, 正在重试.", err)
 		}
 	})
 	saveToken()
