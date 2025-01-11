@@ -188,6 +188,8 @@ func (r Request) WriteToFile(path string) error {
 	defer r.client().CloseIdleConnections()
 	return writeToFile(rd, path)
 }
+
+// DownloadReadSeeker 下载一个ReadSeeker流，文件不落地
 func (r Request) DownloadReadSeeker() (io.ReadSeeker, error) {
 	// Create a buffer to store the downloaded data
 	var buf bytes.Buffer

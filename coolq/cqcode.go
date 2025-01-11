@@ -167,7 +167,8 @@ func toElements(e []message.IMessageElement, source message.Source) (r []msg.Ele
 				},
 			}
 		case *message.NewTechImageElement:
-			if o.LegacyFriend != nil {
+			switch {
+			case o.LegacyFriend != nil:
 				data := pairs{
 					{K: "file", V: hex.EncodeToString(o.LegacyFriend.Md5) + ".image"},
 					{K: "url", V: o.LegacyFriend.Url},
@@ -179,14 +180,13 @@ func toElements(e []message.IMessageElement, source message.Source) (r []msg.Ele
 					Type: "image",
 					Data: data,
 				}
-			} else if o.LegacyGroup != nil {
+			case o.LegacyGroup != nil:
 				data := pairs{
 					{K: "file", V: hex.EncodeToString(o.LegacyGroup.Md5) + ".image"},
 					{K: "subType", V: strconv.FormatInt(int64(o.LegacyGroup.ImageBizType), 10)},
 					{K: "url", V: o.LegacyGroup.Url},
 				}
-				switch { //群闪照已经下线了
-				case o.LegacyGroup.EffectID != 0:
+				if o.LegacyGroup.EffectID != 0 { //群闪照已经下线了
 					data = append(data, pair{K: "type", V: "show"})
 					data = append(data, pair{K: "id", V: strconv.FormatInt(int64(o.LegacyGroup.EffectID), 10)})
 				}
@@ -194,7 +194,7 @@ func toElements(e []message.IMessageElement, source message.Source) (r []msg.Ele
 					Type: "image",
 					Data: data,
 				}
-			} else if o.LegacyGuild != nil {
+			case o.LegacyGuild != nil:
 				data := pairs{
 					{K: "file", V: hex.EncodeToString(o.LegacyGuild.Md5) + ".image"},
 					{K: "url", V: o.LegacyGuild.Url},
@@ -203,8 +203,7 @@ func toElements(e []message.IMessageElement, source message.Source) (r []msg.Ele
 					Type: "image",
 					Data: data,
 				}
-			} else {
-
+			default:
 				data := pairs{
 					{K: "file", V: hex.EncodeToString(o.Md5) + ".image"},
 					{K: "url", V: o.DownloadUrl()},
@@ -350,12 +349,13 @@ func ToMessageContent(e []message.IMessageElement, source message.Source) (r []g
 				"data": global.MSG{"file": o.Name, "url": o.Url},
 			}
 		case *message.NewTechImageElement:
-			if o.LegacyGuild != nil {
+			switch {
+			case o.LegacyGuild != nil:
 				m = global.MSG{
 					"type": "image",
 					"data": global.MSG{"file": hex.EncodeToString(o.LegacyGuild.Md5) + ".image", "url": o.LegacyGuild.Url},
 				}
-			} else if o.LegacyFriend != nil {
+			case o.LegacyFriend != nil:
 				data := global.MSG{"file": hex.EncodeToString(o.LegacyFriend.Md5) + ".image", "url": o.LegacyFriend.Url}
 				if o.LegacyFriend.Flash {
 					data["type"] = "flash"
@@ -364,10 +364,9 @@ func ToMessageContent(e []message.IMessageElement, source message.Source) (r []g
 					"type": "image",
 					"data": data,
 				}
-			} else if o.LegacyGroup != nil {
+			case o.LegacyGroup != nil:
 				data := global.MSG{"file": hex.EncodeToString(o.Md5) + ".image", "url": o.LegacyGroup.Url, "subType": uint32(o.LegacyGroup.ImageBizType)}
-				switch {
-				case o.LegacyGroup.EffectID != 0:
+				if o.LegacyGroup.EffectID != 0 {
 					data["type"] = "show"
 					data["id"] = o.LegacyGroup.EffectID
 				}
@@ -375,7 +374,7 @@ func ToMessageContent(e []message.IMessageElement, source message.Source) (r []g
 					"type": "image",
 					"data": data,
 				}
-			} else {
+			default:
 				data := global.MSG{"file": hex.EncodeToString(o.Md5) + ".image", "url": o.Url}
 				m = global.MSG{
 					"type": "image",
@@ -952,11 +951,11 @@ func (bot *CQBot) makeImageOrVideoElem(elem msg.Element, sourceType message.Sour
 				}
 			} else {
 				//case = 0 写内存
-				if stream, err := r.DownloadReadSeeker(); err == nil {
+				stream, err := r.DownloadReadSeeker()
+				if err == nil {
 					return &msg.LocalImage{Stream: stream}, nil
-				} else {
-					return nil, err
 				}
+				return nil, err
 			}
 		}
 		if video {

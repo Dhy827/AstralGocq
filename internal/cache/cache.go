@@ -23,6 +23,7 @@ type Cache struct {
 	lastCleanTime uint32
 }
 
+// ScanExpiredData 扫描并删除过期数据，防止gocq的数据库越来越肥硕
 func (c *Cache) ScanExpiredData() {
 	// 创建迭代器
 	c.clean.Lock()

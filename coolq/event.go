@@ -651,7 +651,7 @@ func (bot *CQBot) groupDecrease(groupCode, userUin int64, operator *client.Group
 	})
 }
 
-func (bot *CQBot) checkMedia(e []message.IMessageElement, sourceID int64) {
+func (bot *CQBot) checkMedia(e []message.IMessageElement, _ int64) { //sourceID int64
 	for _, elem := range e {
 		switch i := elem.(type) {
 		case *message.NewTechImageElement:
@@ -661,7 +661,8 @@ func (bot *CQBot) checkMedia(e []message.IMessageElement, sourceID int64) {
 				log.Warnf("图片下载地址 %v 解析失败: %v", i.Url, err)
 				continue
 			}
-			if i.LegacyFriend != nil {
+			switch {
+			case i.LegacyFriend != nil:
 				if i.LegacyFriend.Url == "" {
 					i.LegacyFriend.Url = i.Url
 				}
@@ -669,7 +670,7 @@ func (bot *CQBot) checkMedia(e []message.IMessageElement, sourceID int64) {
 				i.Width = uint32(i.LegacyFriend.Width)
 				i.Height = uint32(i.LegacyFriend.Height)
 				i.Md5 = i.LegacyFriend.Md5
-			} else if i.LegacyGroup != nil {
+			case i.LegacyGroup != nil:
 				if i.LegacyGroup.Url == "" {
 					i.LegacyGroup.Url = i.Url
 				}
@@ -677,7 +678,7 @@ func (bot *CQBot) checkMedia(e []message.IMessageElement, sourceID int64) {
 				i.Width = uint32(i.LegacyGroup.Width)
 				i.Height = uint32(i.LegacyGroup.Height)
 				i.Md5 = i.LegacyGroup.Md5
-			} else if i.LegacyGuild != nil {
+			case i.LegacyGuild != nil:
 				if i.LegacyGuild.Url == "" {
 					i.LegacyGuild.Url = i.Url
 				}
