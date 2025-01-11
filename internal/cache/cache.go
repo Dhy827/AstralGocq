@@ -2,32 +2,69 @@
 package cache
 
 import (
+	pb "github.com/ProtocolScience/AstralGo/client/pb/database"
+	"github.com/RomiChan/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
+	"sync"
+	"time"
 )
 
 // Media Cache DBs
 var (
-	Image Cache
-	Video Cache
-	// todo: Voice?
+	Media Cache
 )
 
 // Cache wraps the btree.DB for concurrent safe
 type Cache struct {
-	ldb *leveldb.DB
+	ldb           *leveldb.DB
+	clean         sync.Mutex
+	lastCleanTime uint32
+}
+
+func (c *Cache) ScanExpiredData() {
+	// 创建迭代器
+	c.clean.Lock()
+	curTime := uint32(time.Now().Unix())
+	if curTime-c.lastCleanTime > 3600 {
+		c.lastCleanTime = curTime
+		iter := c.ldb.NewIterator(nil, nil)
+		for iter.Next() {
+			value := iter.Value()
+			result := pb.DatabaseRecord{}
+			if proto.Unmarshal(value, &result) == nil {
+				if curTime > result.Register.ExpiredTime {
+					_ = c.ldb.Delete(iter.Key(), nil)
+				}
+			}
+		}
+		iter.Release()
+	}
+	defer c.clean.Unlock()
 }
 
 // Insert 添加媒体缓存
-func (c *Cache) Insert(md5, data []byte) {
+func (c *Cache) Insert(md5 []byte, record *pb.DatabaseRecord) {
+	c.ScanExpiredData()
+	record.Register = &pb.DataRegister{
+		ExpiredTime: uint32(time.Now().Unix()) + 2592000,
+	}
+	data, _ := proto.Marshal(record)
 	_ = c.ldb.Put(md5, data, nil)
 }
 
 // Get 获取缓存信息
-func (c *Cache) Get(md5 []byte) []byte {
+func (c *Cache) Get(md5 []byte) *pb.DatabaseRecord {
+	c.ScanExpiredData()
 	got, _ := c.ldb.Get(md5, nil)
-	return got
+	result := pb.DatabaseRecord{}
+	err := proto.Unmarshal(got, &result)
+	if err != nil {
+		return nil
+	}
+	c.Insert(md5, &result) //update time
+	return &result
 }
 
 // Delete 删除指定缓存
@@ -46,6 +83,5 @@ func Init() {
 		}
 		cache.ldb = ldb
 	}
-	open("image", "data/images", &Image)
-	open("video", "data/videos", &Video)
+	open("database", "data/database", &Media)
 }

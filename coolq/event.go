@@ -4,11 +4,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/ProtocolScience/AstralGo/client/pb/database"
+	"net/url"
 	"path"
 	"strconv"
 	"strings"
 
-	"github.com/ProtocolScience/AstralGo/binary"
 	"github.com/ProtocolScience/AstralGo/client"
 	"github.com/ProtocolScience/AstralGo/message"
 	log "github.com/sirupsen/logrus"
@@ -653,47 +654,53 @@ func (bot *CQBot) groupDecrease(groupCode, userUin int64, operator *client.Group
 func (bot *CQBot) checkMedia(e []message.IMessageElement, sourceID int64) {
 	for _, elem := range e {
 		switch i := elem.(type) {
-		case *message.GroupImageElement:
-			if i.Flash && sourceID != 0 {
-				u, err := bot.Client.GetGroupImageDownloadUrl(i.FileId, sourceID, i.Md5)
-				if err != nil {
-					log.Warnf("获取闪照地址时出现错误: %v", err)
-				} else {
-					i.Url = u
-				}
+		case *message.NewTechImageElement:
+			i.Url = bot.Client.GetElementImageUrl(i)
+			parsedUrl, err := url.Parse(i.Url)
+			if err != nil {
+				log.Warnf("图片下载地址 %v 解析失败: %v", i.Url, err)
+				continue
 			}
-			data := binary.NewWriterF(func(w *binary.Writer) {
-				w.Write(i.Md5)
-				w.WriteUInt32(uint32(i.Size))
-				w.WriteString(i.ImageId)
-				w.WriteString(i.Url)
-			})
-			cache.Image.Insert(i.Md5, data)
-
-		case *message.GuildImageElement:
-			data := binary.NewWriterF(func(w *binary.Writer) {
-				w.Write(i.Md5)
-				w.WriteUInt32(uint32(i.Size))
-				w.WriteString(i.DownloadIndex)
-				w.WriteString(i.Url)
-			})
-			filename := hex.EncodeToString(i.Md5) + ".image"
-			cache.Image.Insert(i.Md5, data)
-			if i.Url != "" && !global.PathExists(path.Join(global.ImagePath, "guild-images", filename)) {
-				r := download.Request{URL: i.Url}
-				if err := r.WriteToFile(path.Join(global.ImagePath, "guild-images", filename)); err != nil {
-					log.Warnf("下载频道图片时出现错误: %v", err)
+			if i.LegacyFriend != nil {
+				if i.LegacyFriend.Url == "" {
+					i.LegacyFriend.Url = i.Url
 				}
+				i.Size = uint32(i.LegacyFriend.Size)
+				i.Width = uint32(i.LegacyFriend.Width)
+				i.Height = uint32(i.LegacyFriend.Height)
+				i.Md5 = i.LegacyFriend.Md5
+			} else if i.LegacyGroup != nil {
+				if i.LegacyGroup.Url == "" {
+					i.LegacyGroup.Url = i.Url
+				}
+				i.Size = uint32(i.LegacyGroup.Size)
+				i.Width = uint32(i.LegacyGroup.Width)
+				i.Height = uint32(i.LegacyGroup.Height)
+				i.Md5 = i.LegacyGroup.Md5
+			} else if i.LegacyGuild != nil {
+				if i.LegacyGuild.Url == "" {
+					i.LegacyGuild.Url = i.Url
+				}
+				i.Size = uint32(i.LegacyGuild.Size)
+				i.Width = uint32(i.LegacyGuild.Width)
+				i.Height = uint32(i.LegacyGuild.Height)
+				i.Md5 = i.LegacyGuild.Md5
 			}
-		case *message.FriendImageElement:
-			data := binary.NewWriterF(func(w *binary.Writer) {
-				w.Write(i.Md5)
-				w.WriteUInt32(uint32(i.Size))
-				w.WriteString(i.ImageId)
-				w.WriteString(i.Url)
+			cache.Media.Insert(i.Md5, &database.DatabaseRecord{
+				Image: &database.DatabaseImage{
+					Sha1:         i.Sha1,
+					Md5:          i.Md5,
+					Path:         parsedUrl.Path,
+					Query:        parsedUrl.RawQuery,
+					Domain:       parsedUrl.Host,
+					ImageId:      i.FileUUID,
+					Size:         i.Size,
+					Width:        i.Width,
+					Height:       i.Height,
+					BusinessType: i.BusinessType,
+					ImageType:    i.ImageType,
+				},
 			})
-			cache.Image.Insert(i.Md5, data)
-
 		case *message.VoiceElement:
 			// todo: don't download original file?
 			i.Name = strings.ReplaceAll(i.Name, "{", "")
@@ -706,16 +713,17 @@ func (bot *CQBot) checkMedia(e []message.IMessageElement, sourceID int64) {
 				}
 			}
 		case *message.ShortVideoElement:
-			data := binary.NewWriterF(func(w *binary.Writer) {
-				w.Write(i.Md5)
-				w.Write(i.ThumbMd5)
-				w.WriteUInt32(uint32(i.Size))
-				w.WriteUInt32(uint32(i.ThumbSize))
-				w.WriteString(i.Name)
-				w.Write(i.Uuid)
+			cache.Media.Insert(i.Md5, &database.DatabaseRecord{
+				Video: &database.DatabaseVideo{
+					Md5:       i.Md5,
+					ThumbMd5:  i.ThumbMd5,
+					ThumbSize: uint32(i.ThumbSize),
+					Size:      uint32(i.Size),
+					Name:      i.Name,
+					Uuid:      i.Uuid,
+				},
 			})
 			filename := hex.EncodeToString(i.Md5) + ".video"
-			cache.Video.Insert(i.Md5, data)
 			i.Name = filename
 			i.Url = bot.Client.GetShortVideoUrl(i.Uuid, i.Md5)
 		}

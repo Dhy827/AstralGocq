@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/ProtocolScience/AstralGo/client/pb/database"
 	"math"
 	"os"
 	"path"
@@ -1553,39 +1554,29 @@ func (bot *CQBot) CQHandleQuickOperation(context, operation gjson.Result) global
 // https://docs.go-cqhttp.org/api/#%E8%8E%B7%E5%8F%96%E5%9B%BE%E7%89%87%E4%BF%A1%E6%81%AF
 // @route(get_image)
 func (bot *CQBot) CQGetImage(file string) global.MSG {
-	var b []byte
+	var b *database.DatabaseRecord
 	var err error
 	if strings.HasSuffix(file, ".image") {
 		var f []byte
 		f, err = hex.DecodeString(strings.TrimSuffix(file, ".image"))
-		b = cache.Image.Get(f)
+		b = cache.Media.Get(f)
 	}
-
-	if b == nil {
-		if !global.PathExists(path.Join(global.ImagePath, file)) {
-			return Failed(100)
+	if err == nil && b != nil {
+		m := global.MSG{
+			"size":     b.Image.Size,
+			"filename": b.Image.ImageId,
+			"url":      b.Image.GetDatabaseImageUrl(""),
 		}
-		b, err = os.ReadFile(path.Join(global.ImagePath, file))
-	}
-
-	if err == nil {
-		r := binary.NewReader(b)
-		r.ReadBytes(16)
-		msg := global.MSG{
-			"size":     r.ReadInt32(),
-			"filename": r.ReadString(),
-			"url":      r.ReadString(),
-		}
-		local := path.Join(global.CachePath, file+path.Ext(msg["filename"].(string)))
+		local := path.Join(global.CachePath, file+path.Ext(m["filename"].(string)))
 		if !global.PathExists(local) {
-			r := download.Request{URL: msg["url"].(string)}
+			r := download.Request{URL: m["url"].(string)}
 			if err := r.WriteToFile(local); err != nil {
-				log.Warnf("下载图片 %v 时出现错误: %v", msg["url"], err)
+				log.Warnf("下载图片 %v 时出现错误: %v", m["url"], err)
 				return Failed(100, "DOWNLOAD_IMAGE_ERROR", err.Error())
 			}
 		}
-		msg["file"] = local
-		return OK(msg)
+		m["file"] = local
+		return OK(m)
 	}
 	return Failed(100, "LOAD_FILE_ERROR", err.Error())
 }
@@ -1870,7 +1861,7 @@ func (bot *CQBot) CQOcrImage(imageID string) global.MSG {
 	var elem msg.Element
 	elem.Type = "image"
 	elem.Data = []msg.Pair{{K: "file", V: imageID}}
-	img, err := bot.makeImageOrVideoElem(elem, false, message.SourceGroup)
+	img, err := bot.makeImageOrVideoElem(elem, message.SourceGroup)
 	if err != nil {
 		log.Warnf("load image error: %v", err)
 		return Failed(100, "LOAD_FILE_ERROR", err.Error())

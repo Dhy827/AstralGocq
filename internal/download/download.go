@@ -3,6 +3,7 @@ package download
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"crypto/tls"
 	"fmt"
@@ -186,6 +187,50 @@ func (r Request) WriteToFile(path string) error {
 	defer rd.Close()
 	defer r.client().CloseIdleConnections()
 	return writeToFile(rd, path)
+}
+func (r Request) DownloadReadSeeker() (io.ReadSeeker, error) {
+	// Create a buffer to store the downloaded data
+	var buf bytes.Buffer
+
+	// Create an HTTP request
+	req, err := http.NewRequest(r.Method, r.URL, r.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add headers to the request
+	for key, value := range r.Header {
+		req.Header.Add(key, value)
+	}
+
+	// Use a custom client if provided
+	client := r.custcli
+	if client == nil {
+		client = http.DefaultClient
+	}
+
+	// Perform the request
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Limit the reader if a limit is set
+	var reader io.Reader = resp.Body
+	if r.Limit > 0 {
+		reader = io.LimitReader(resp.Body, r.Limit)
+	}
+
+	// Copy the response body to the buffer
+	_, err = io.Copy(&buf, reader)
+	_ = resp.Body.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the buffer as an io.ReadSeeker
+	return bytes.NewReader(buf.Bytes()), nil
 }
 
 // WriteToFileMultiThreading 多线程下载到制定目录

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ProtocolScience/AstralGo/client/nt"
+	"github.com/ProtocolScience/AstralGo/client/pb/database"
 	"io"
 	"math/rand"
 	"net/url"
@@ -17,7 +18,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ProtocolScience/AstralGo/binary"
 	"github.com/ProtocolScience/AstralGo/message"
 	"github.com/ProtocolScience/AstralGo/utils"
 	b14 "github.com/fumiama/go-base16384"
@@ -166,43 +166,53 @@ func toElements(e []message.IMessageElement, source message.Source) (r []msg.Ele
 					{K: "url", V: o.Url},
 				},
 			}
-		case *message.GroupImageElement:
-			data := pairs{
-				{K: "file", V: hex.EncodeToString(o.Md5) + ".image"},
-				{K: "subType", V: strconv.FormatInt(int64(o.ImageBizType), 10)},
-				{K: "url", V: o.Url},
-			}
-			switch {
-			case o.Flash:
-				data = append(data, pair{K: "type", V: "flash"})
-			case o.EffectID != 0:
-				data = append(data, pair{K: "type", V: "show"})
-				data = append(data, pair{K: "id", V: strconv.FormatInt(int64(o.EffectID), 10)})
-			}
-			m = msg.Element{
-				Type: "image",
-				Data: data,
-			}
-		case *message.GuildImageElement:
-			data := pairs{
-				{K: "file", V: hex.EncodeToString(o.Md5) + ".image"},
-				{K: "url", V: o.Url},
-			}
-			m = msg.Element{
-				Type: "image",
-				Data: data,
-			}
-		case *message.FriendImageElement:
-			data := pairs{
-				{K: "file", V: hex.EncodeToString(o.Md5) + ".image"},
-				{K: "url", V: o.Url},
-			}
-			if o.Flash {
-				data = append(data, pair{K: "type", V: "flash"})
-			}
-			m = msg.Element{
-				Type: "image",
-				Data: data,
+		case *message.NewTechImageElement:
+			if o.LegacyFriend != nil {
+				data := pairs{
+					{K: "file", V: hex.EncodeToString(o.LegacyFriend.Md5) + ".image"},
+					{K: "url", V: o.LegacyFriend.Url},
+				}
+				if o.LegacyFriend.Flash {
+					data = append(data, pair{K: "type", V: "flash"})
+				}
+				m = msg.Element{
+					Type: "image",
+					Data: data,
+				}
+			} else if o.LegacyGroup != nil {
+				data := pairs{
+					{K: "file", V: hex.EncodeToString(o.LegacyGroup.Md5) + ".image"},
+					{K: "subType", V: strconv.FormatInt(int64(o.LegacyGroup.ImageBizType), 10)},
+					{K: "url", V: o.LegacyGroup.Url},
+				}
+				switch { //群闪照已经下线了
+				case o.LegacyGroup.EffectID != 0:
+					data = append(data, pair{K: "type", V: "show"})
+					data = append(data, pair{K: "id", V: strconv.FormatInt(int64(o.LegacyGroup.EffectID), 10)})
+				}
+				m = msg.Element{
+					Type: "image",
+					Data: data,
+				}
+			} else if o.LegacyGuild != nil {
+				data := pairs{
+					{K: "file", V: hex.EncodeToString(o.LegacyGuild.Md5) + ".image"},
+					{K: "url", V: o.LegacyGuild.Url},
+				}
+				m = msg.Element{
+					Type: "image",
+					Data: data,
+				}
+			} else {
+
+				data := pairs{
+					{K: "file", V: hex.EncodeToString(o.Md5) + ".image"},
+					{K: "url", V: o.DownloadUrl()},
+				}
+				m = msg.Element{
+					Type: "image",
+					Data: data,
+				}
 			}
 		case *message.DiceElement:
 			m = msg.Element{
@@ -339,32 +349,38 @@ func ToMessageContent(e []message.IMessageElement, source message.Source) (r []g
 				"type": "video",
 				"data": global.MSG{"file": o.Name, "url": o.Url},
 			}
-		case *message.GroupImageElement:
-			data := global.MSG{"file": hex.EncodeToString(o.Md5) + ".image", "url": o.Url, "subType": uint32(o.ImageBizType)}
-			switch {
-			case o.Flash:
-				data["type"] = "flash"
-			case o.EffectID != 0:
-				data["type"] = "show"
-				data["id"] = o.EffectID
-			}
-			m = global.MSG{
-				"type": "image",
-				"data": data,
-			}
-		case *message.GuildImageElement:
-			m = global.MSG{
-				"type": "image",
-				"data": global.MSG{"file": hex.EncodeToString(o.Md5) + ".image", "url": o.Url},
-			}
-		case *message.FriendImageElement:
-			data := global.MSG{"file": hex.EncodeToString(o.Md5) + ".image", "url": o.Url}
-			if o.Flash {
-				data["type"] = "flash"
-			}
-			m = global.MSG{
-				"type": "image",
-				"data": data,
+		case *message.NewTechImageElement:
+			if o.LegacyGuild != nil {
+				m = global.MSG{
+					"type": "image",
+					"data": global.MSG{"file": hex.EncodeToString(o.LegacyGuild.Md5) + ".image", "url": o.LegacyGuild.Url},
+				}
+			} else if o.LegacyFriend != nil {
+				data := global.MSG{"file": hex.EncodeToString(o.LegacyFriend.Md5) + ".image", "url": o.LegacyFriend.Url}
+				if o.LegacyFriend.Flash {
+					data["type"] = "flash"
+				}
+				m = global.MSG{
+					"type": "image",
+					"data": data,
+				}
+			} else if o.LegacyGroup != nil {
+				data := global.MSG{"file": hex.EncodeToString(o.Md5) + ".image", "url": o.LegacyGroup.Url, "subType": uint32(o.LegacyGroup.ImageBizType)}
+				switch {
+				case o.LegacyGroup.EffectID != 0:
+					data["type"] = "show"
+					data["id"] = o.LegacyGroup.EffectID
+				}
+				m = global.MSG{
+					"type": "image",
+					"data": data,
+				}
+			} else {
+				data := global.MSG{"file": hex.EncodeToString(o.Md5) + ".image", "url": o.Url}
+				m = global.MSG{
+					"type": "image",
+					"data": data,
+				}
 			}
 		case *message.DiceElement:
 			m = global.MSG{"type": "dice", "data": global.MSG{"value": o.Value}}
@@ -632,7 +648,7 @@ func (bot *CQBot) ConvertElement(spec *onebot.Spec, elem msg.Element, sourceType
 		}
 		return message.NewText(text), nil
 	case "image":
-		img, err := bot.makeImageOrVideoElem(elem, false, sourceType)
+		img, err := bot.makeImageOrVideoElem(elem, sourceType)
 		if err != nil {
 			return nil, err
 		}
@@ -649,12 +665,14 @@ func (bot *CQBot) ConvertElement(spec *onebot.Spec, elem msg.Element, sourceType
 		default:
 			return img, nil
 		}
+		if element, ok := img.(*message.NewTechImageElement); ok {
+			img = element.GetLegacyOrSelf()
+		}
 		switch img := img.(type) {
 		case *msg.LocalImage:
 			img.Flash = flash
 			img.EffectID = int32(id)
 		case *message.GroupImageElement:
-			img.Flash = flash
 			img.EffectID = int32(id)
 			i, _ := strconv.ParseInt(elem.Get("subType"), 10, 64)
 			img.ImageBizType = message.ImageBizType(i)
@@ -819,13 +837,13 @@ func (bot *CQBot) ConvertElement(spec *onebot.Spec, elem msg.Element, sourceType
 		maxWidth := parseIntWithDefault("maxwidth", 500)
 		minHeight := parseIntWithDefault("minheight", 200)
 		maxHeight := parseIntWithDefault("maxheight", 1000)
-		img, err := bot.makeImageOrVideoElem(elem, false, sourceType)
+		img, err := bot.makeImageOrVideoElem(elem, sourceType)
 		if err != nil {
 			return nil, errors.New("send cardimage faild")
 		}
 		return bot.makeShowPic(img, source, brief, icon, minWidth, minHeight, maxWidth, maxHeight, sourceType == message.SourceGroup)
 	case "video":
-		file, err := bot.makeImageOrVideoElem(elem, true, sourceType)
+		file, err := bot.makeImageOrVideoElem(elem, sourceType)
 		if err != nil {
 			return nil, err
 		}
@@ -882,50 +900,71 @@ func (bot *CQBot) ConvertElement(spec *onebot.Spec, elem msg.Element, sourceType
 }
 
 // makeImageOrVideoElem 图片 elem 生成器，单独拎出来，用于公用
-func (bot *CQBot) makeImageOrVideoElem(elem msg.Element, video bool, sourceType message.SourceType) (message.IMessageElement, error) {
+func (bot *CQBot) makeImageOrVideoElem(elem msg.Element, sourceType message.SourceType) (message.IMessageElement, error) {
 	f := elem.Get("file")
 	u := elem.Get("url")
-	if strings.HasPrefix(f, "http") {
-		hash := md5.Sum([]byte(f))
+	video := elem.Type == "video"
+	if u == "" {
+		if strings.HasPrefix(f, "http") {
+			u = f
+		}
+	}
+	if u != "" {
+		var hash [16]byte
+		if f == "" {
+			hash = md5.Sum([]byte(u))
+		} else {
+			hash = md5.Sum([]byte(f))
+		}
 		cacheFile := path.Join(global.CachePath, hex.EncodeToString(hash[:])+".cache")
 		maxSize := int64(maxImageSize)
 		if video {
 			maxSize = maxVideoSize
 		}
 		thread, _ := strconv.Atoi(elem.Get("c"))
-		exist := global.PathExists(cacheFile)
-		if exist && (elem.Get("cache") == "" || elem.Get("cache") == "1") {
-			goto useCacheFile
-		}
-		if exist {
+		useCacheFile := false
+		if elem.Get("cache") == "" || elem.Get("cache") == "1" {
+			useCacheFile = true
+		} else {
 			_ = os.Remove(cacheFile)
 		}
-		{
-			var requestURL = f
+		exist := global.PathExists(cacheFile)
+		if !exist || !useCacheFile {
+			var requestURL = u
 			if strings.HasPrefix(requestURL, "https://multimedia.nt.qq.com.cn/") {
-				rKey, err := bot.Client.GetRKey()
-				if err != nil {
-					log.Warnf("Cannot Fetch RKey for download media.")
-					return nil, err
-				}
-
+				//因为rkey有效期非常短，因此要在这里请求之前再次处理一下rkey（尽管前面可能某一处的调用给的url的rkey是最新的）
+				parsedURL, _ := url.Parse(requestURL)
+				queryParams := parsedURL.Query()
+				queryParams.Del("rkey")
+				parsedURL.RawQuery = queryParams.Encode()
+				requestURL = parsedURL.String()
 				if sourceType == message.SourceGroup {
-					requestURL = f + (*rKey)[nt.GroupImageRKey].RKey
+					requestURL = u + bot.Client.GetRKeyString(nt.BusinessGroupImage)
 				} else {
-					requestURL = f + (*rKey)[nt.FriendImageRKey].RKey
+					requestURL = u + bot.Client.GetRKeyString(nt.BusinessFriendImage)
 				}
 			}
 			r := download.Request{URL: requestURL, Limit: maxSize}
-			if err := r.WriteToFileMultiThreading(cacheFile, thread); err != nil {
-				return nil, err
+			if useCacheFile {
+				//cache = 1 写盘
+				if err := r.WriteToFileMultiThreading(cacheFile, thread); err != nil {
+					return nil, err
+				}
+			} else {
+				//case = 0 写内存
+				if stream, err := r.DownloadReadSeeker(); err == nil {
+					return &msg.LocalImage{Stream: stream}, nil
+				} else {
+					return nil, err
+				}
 			}
 		}
-	useCacheFile:
 		if video {
 			return &msg.LocalVideo{File: cacheFile}, nil
 		}
-		return &msg.LocalImage{File: cacheFile, URL: f}, nil
+		return &msg.LocalImage{File: cacheFile, URL: u}, nil
 	}
+
 	if strings.HasPrefix(f, "file") {
 		fu, err := url.Parse(f)
 		if err != nil {
@@ -966,80 +1005,56 @@ func (bot *CQBot) makeImageOrVideoElem(elem msg.Element, video bool, sourceType 
 		}
 		return &msg.LocalImage{Stream: bytes.NewReader(b14.Decode(b)), URL: f}, nil
 	}
-	rawPath := path.Join(global.ImagePath, f)
 	if video {
 		if strings.HasSuffix(f, ".video") {
 			hash, err := hex.DecodeString(strings.TrimSuffix(f, ".video"))
 			if err == nil {
-				if b := cache.Video.Get(hash); b != nil {
+				if b := cache.Media.Get(hash); b != nil {
 					return bot.readVideoCache(b), nil
 				}
 			}
 		}
-		rawPath = path.Join(global.VideoPath, f)
+		rawPath := path.Join(global.VideoPath, f)
 		if !global.PathExists(rawPath) {
 			return nil, errors.New("invalid video")
 		}
-		if path.Ext(rawPath) != ".video" {
-			return &msg.LocalVideo{File: rawPath}, nil
-		}
-		b, _ := os.ReadFile(rawPath)
-		return bot.readVideoCache(b), nil
-	}
-	// 目前频道内上传的图片均无法被查询到, 需要单独处理
-	if sourceType == message.SourceGuildChannel {
-		cacheFile := path.Join(global.ImagePath, "guild-images", f)
-		if global.PathExists(cacheFile) {
-			return &msg.LocalImage{File: cacheFile}, nil
-		}
+		return &msg.LocalVideo{File: rawPath}, nil
 	}
 	if strings.HasSuffix(f, ".image") {
 		hash, err := hex.DecodeString(strings.TrimSuffix(f, ".image"))
 		if err == nil {
-			if b := cache.Image.Get(hash); b != nil {
-				return bot.readImageCache(b, sourceType)
+			if b := cache.Media.Get(hash); b != nil {
+				return bot.readImageCache(elem, b, sourceType)
 			}
 		}
 	}
-	exist := global.PathExists(rawPath)
-	if !exist {
-		if elem.Get("url") != "" {
-			elem.Data = []msg.Pair{{K: "file", V: elem.Get("url")}}
-			return bot.makeImageOrVideoElem(elem, false, sourceType)
-		}
-		return nil, errors.New("invalid image")
-	}
-	if path.Ext(rawPath) != ".image" {
+	rawPath := path.Join(global.ImagePath, f)
+	if global.PathExists(rawPath) && f != "" {
 		return &msg.LocalImage{File: rawPath, URL: u}, nil
 	}
-	b, err := os.ReadFile(rawPath)
-	if err != nil {
-		return nil, err
-	}
-	return bot.readImageCache(b, sourceType)
+	return nil, errors.New("invalid image")
 }
 
-func (bot *CQBot) readImageCache(b []byte, sourceType message.SourceType) (message.IMessageElement, error) {
+func (bot *CQBot) readImageCache(elem msg.Element, record *database.DatabaseRecord, sourceType message.SourceType) (message.IMessageElement, error) {
 	var err error
-	if len(b) < 20 {
+	var rsp message.IMessageElement
+	if record.Image == nil {
 		return nil, errors.New("invalid cache")
 	}
-	r := binary.NewReader(b)
-	hash := r.ReadBytes(16)
-	size := r.ReadInt32()
-	r.ReadString()
-	imageURL := r.ReadString()
-	if size == 0 && imageURL != "" {
-		// TODO: fix this
-		var elem msg.Element
+	hash := record.Image.Md5
+	size := int32(record.Image.Size)
+	imageURL := bot.Client.GetDatabaseImageUrl(record.Image)
+	if imageURL != "" {
 		elem.Type = "image"
-		elem.Data = []msg.Pair{{K: "file", V: imageURL}}
-		return bot.makeImageOrVideoElem(elem, false, sourceType)
+		elem.Data = append(elem.Data, msg.Pair{K: "url", V: imageURL})
+		rsp, err = bot.makeImageOrVideoElem(elem, sourceType)
+		if err == nil {
+			return rsp, nil
+		}
 	}
-	var rsp message.IMessageElement
 	switch sourceType { // nolint:exhaustive
 	case message.SourceGroup:
-		rsp, err = bot.Client.QueryImage(bot.Client.GroupList[0].Code, 0, hash, size)
+		rsp, err = bot.Client.QueryImage(bot.Client.GroupList[0].Code, 0, record.Image)
 	case message.SourceGuildChannel:
 		if len(bot.Client.GuildService.Guilds) == 0 {
 			err = errors.New("cannot query guild image: not any joined guild")
@@ -1048,26 +1063,19 @@ func (bot *CQBot) readImageCache(b []byte, sourceType message.SourceType) (messa
 		guild := bot.Client.GuildService.Guilds[0]
 		rsp, err = bot.Client.GuildService.QueryImage(guild.GuildId, guild.Channels[0].ChannelId, hash, uint64(size))
 	default:
-		rsp, err = bot.Client.QueryImage(0, bot.Client.Uin, hash, size)
-	}
-	if err != nil && imageURL != "" {
-		var elem msg.Element
-		elem.Type = "image"
-		elem.Data = []msg.Pair{{K: "file", V: imageURL}}
-		return bot.makeImageOrVideoElem(elem, false, sourceType)
+		rsp, err = bot.Client.QueryImage(0, bot.Client.Uin, record.Image)
 	}
 	return rsp, err
 }
 
-func (bot *CQBot) readVideoCache(b []byte) message.IMessageElement {
-	r := binary.NewReader(b)
+func (bot *CQBot) readVideoCache(record *database.DatabaseRecord) message.IMessageElement {
 	return &message.ShortVideoElement{ // todo 检查缓存是否有效
-		Md5:       r.ReadBytes(16),
-		ThumbMd5:  r.ReadBytes(16),
-		Size:      r.ReadInt32(),
-		ThumbSize: r.ReadInt32(),
-		Name:      r.ReadString(),
-		Uuid:      r.ReadAvailable(),
+		Md5:       record.Video.Md5,
+		ThumbMd5:  record.Video.ThumbMd5,
+		Size:      int32(record.Video.Size),
+		ThumbSize: int32(record.Video.ThumbSize),
+		Name:      record.Video.Name,
+		Uuid:      record.Video.Uuid,
 	}
 }
 
@@ -1091,11 +1099,17 @@ func (bot *CQBot) makeShowPic(elem message.IMessageElement, source string, brief
 		}
 		elem = e
 	}
+	if element, ok := elem.(*message.NewTechImageElement); ok {
+		elem = element.GetLegacyOrSelf()
+	}
 	switch i := elem.(type) {
 	case *message.GroupImageElement:
 		xml = fmt.Sprintf(`<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><msg serviceID="5" templateID="12345" action="" brief="%s" sourceMsgId="0" url="%s" flag="0" adverSign="0" multiMsgFlag="0"><item layout="0" advertiser_id="0" aid="0"><image uuid="%x" md5="%x" GroupFiledid="0" filesize="%d" local_path="%s" minWidth="%d" minHeight="%d" maxWidth="%d" maxHeight="%d" /></item><source name="%s" icon="%s" action="" appid="-1" /></msg>`, brief, "", i.Md5, i.Md5, 0, "", minWidth, minHeight, maxWidth, maxHeight, source, icon)
 		suf = i
 	case *message.FriendImageElement:
+		xml = fmt.Sprintf(`<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><msg serviceID="5" templateID="12345" action="" brief="%s" sourceMsgId="0" url="%s" flag="0" adverSign="0" multiMsgFlag="0"><item layout="0" advertiser_id="0" aid="0"><image uuid="%x" md5="%x" GroupFiledid="0" filesize="%d" local_path="%s" minWidth="%d" minHeight="%d" maxWidth="%d" maxHeight="%d" /></item><source name="%s" icon="%s" action="" appid="-1" /></msg>`, brief, "", i.Md5, i.Md5, 0, "", minWidth, minHeight, maxWidth, maxHeight, source, icon)
+		suf = i
+	case *message.NewTechImageElement:
 		xml = fmt.Sprintf(`<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><msg serviceID="5" templateID="12345" action="" brief="%s" sourceMsgId="0" url="%s" flag="0" adverSign="0" multiMsgFlag="0"><item layout="0" advertiser_id="0" aid="0"><image uuid="%x" md5="%x" GroupFiledid="0" filesize="%d" local_path="%s" minWidth="%d" minHeight="%d" maxWidth="%d" maxHeight="%d" /></item><source name="%s" icon="%s" action="" appid="-1" /></msg>`, brief, "", i.Md5, i.Md5, 0, "", minWidth, minHeight, maxWidth, maxHeight, source, icon)
 		suf = i
 	}
