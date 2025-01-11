@@ -656,7 +656,7 @@ func (bot *CQBot) checkMedia(e []message.IMessageElement, _ int64) { //sourceID 
 		switch i := elem.(type) {
 		case *message.NewTechImageElement:
 			i.Url = bot.Client.GetElementImageUrl(i)
-			parsedUrl, err := url.Parse(i.Url)
+			parsedURL, err := url.Parse(i.Url)
 			if err != nil {
 				log.Warnf("图片下载地址 %v 解析失败: %v", i.Url, err)
 				continue
@@ -691,9 +691,9 @@ func (bot *CQBot) checkMedia(e []message.IMessageElement, _ int64) { //sourceID 
 				Image: &database.DatabaseImage{
 					Sha1:         i.Sha1,
 					Md5:          i.Md5,
-					Path:         parsedUrl.Path,
-					Query:        parsedUrl.RawQuery,
-					Domain:       parsedUrl.Host,
+					Path:         parsedURL.Path,
+					Query:        parsedURL.RawQuery,
+					Domain:       parsedURL.Host,
 					ImageId:      i.FileUUID,
 					Size:         i.Size,
 					Width:        i.Width,

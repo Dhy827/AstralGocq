@@ -938,9 +938,9 @@ func (bot *CQBot) makeImageOrVideoElem(elem msg.Element, sourceType message.Sour
 				parsedURL.RawQuery = queryParams.Encode()
 				requestURL = parsedURL.String()
 				if sourceType == message.SourceGroup {
-					requestURL = u + bot.Client.GetRKeyString(nt.BusinessGroupImage)
+					requestURL = requestURL + bot.Client.GetRKeyString(nt.BusinessGroupImage)
 				} else {
-					requestURL = u + bot.Client.GetRKeyString(nt.BusinessFriendImage)
+					requestURL = requestURL + bot.Client.GetRKeyString(nt.BusinessFriendImage)
 				}
 			}
 			r := download.Request{URL: requestURL, Limit: maxSize}
