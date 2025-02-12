@@ -203,58 +203,66 @@ func NewSignClient(c *client.QQClient) *SignClient {
 }
 
 func (c *SignClient) requestSignServer(action string, data map[string]string) (string, []byte, error) {
-	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded"}
-	signServer, err := c.manager.GetAvailableSignServer()
-	if err != nil || signServer == nil || len(signServer.URL) == 0 {
-		log.Warnf("Error getting sign server: %v, using main server", err)
-		c.manager.IncrementErrorCount()
-		signServer = &base.SignServers[0]
-	}
-	data["key"] = signServer.Key
-	data["uin"] = strconv.FormatInt(base.Account.Uin, 10)
-
-	data["qua"] = device.Protocol.Version().QUA
-	data["android_id"] = utils.B2S(device.AndroidId)
-	data["guid"] = hex.EncodeToString(device.Guid)
-	data["qimei36"] = device.QImei36
-	if strings.HasPrefix(signServer.URL, "ws://") || strings.HasPrefix(signServer.URL, "wss://") {
-		a, e := c.requestWebSocket(signServer, action, data)
-		if e != nil { //try again
-			a, e = c.requestWebSocket(signServer, action, data)
+	i := 0
+	for {
+		headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded"}
+		signServer, err := c.manager.GetAvailableSignServer()
+		if err != nil || signServer == nil || len(signServer.URL) == 0 {
+			log.Warnf("Error getting sign server: %v, using main server", err)
+			c.manager.IncrementErrorCount()
+			signServer = &base.SignServers[0]
 		}
-		return signServer.URL, a, e
-	}
-	//HTTP ABOVE
-	urlAddress := strings.TrimSuffix(signServer.URL, "/") + "/" + strings.TrimPrefix(action, "/")
-	auth := signServer.Authorization
-	if auth != "-" && auth != "" {
-		headers["Authorization"] = auth
-	}
+		data["key"] = signServer.Key
+		data["uin"] = strconv.FormatInt(base.Account.Uin, 10)
 
-	var bodyBytes bytes.Buffer
-	for key, value := range data {
-		bodyBytes.WriteString(fmt.Sprintf("%v=%v&", key, value))
-	}
-	bodyString := bodyBytes.String()
-	bodyString = bodyString[:len(bodyString)-1]
-	body := bytes.NewBufferString(bodyString)
-	//log.Infof("POST: %s \n %s", urlAddress, bodyString)
-	hash := md5.New()
-	hash.Write([]byte("37mWT8rCCNyT2Zi11ACT8pbhe8wCRSKG"))
-	hash.Write(body.Bytes())
-	headers["gocq-ticket"] = hex.EncodeToString(hash.Sum(nil))
+		data["qua"] = device.Protocol.Version().QUA
+		data["android_id"] = utils.B2S(device.AndroidId)
+		data["guid"] = hex.EncodeToString(device.Guid)
+		data["qimei36"] = device.QImei36
+		var resp []byte
+		if strings.HasPrefix(signServer.URL, "ws://") || strings.HasPrefix(signServer.URL, "wss://") {
+			a, e := c.requestWebSocket(signServer, action, data)
+			err = e
+			resp = a
+		} else {
+			//HTTP ABOVE
+			urlAddress := strings.TrimSuffix(signServer.URL, "/") + "/" + strings.TrimPrefix(action, "/")
+			auth := signServer.Authorization
+			if auth != "-" && auth != "" {
+				headers["Authorization"] = auth
+			}
 
-	req := download.Request{
-		Method: http.MethodPost,
-		Header: headers,
-		URL:    urlAddress,
-		Body:   body,
-	}.WithTimeout(time.Duration(base.SignServerTimeout) * time.Second)
-	resp, err := req.Bytes()
-	if err != nil {
-		c.manager.Set(nil)
+			var bodyBytes bytes.Buffer
+			for key, value := range data {
+				bodyBytes.WriteString(fmt.Sprintf("%v=%v&", key, value))
+			}
+			bodyString := bodyBytes.String()
+			bodyString = bodyString[:len(bodyString)-1]
+			body := bytes.NewBufferString(bodyString)
+			//log.Infof("POST: %s \n %s", urlAddress, bodyString)
+			hash := md5.New()
+			hash.Write([]byte("37mWT8rCCNyT2Zi11ACT8pbhe8wCRSKG"))
+			hash.Write(body.Bytes())
+			headers["gocq-ticket"] = hex.EncodeToString(hash.Sum(nil))
+
+			req := download.Request{
+				Method: http.MethodPost,
+				Header: headers,
+				URL:    urlAddress,
+				Body:   body,
+			}.WithTimeout(time.Duration(base.SignServerTimeout) * time.Second)
+			a, e := req.Bytes()
+			if e != nil {
+				c.manager.Set(nil)
+			}
+			err = e
+			resp = a
+		}
+		if err == nil || i == 1 {
+			return signServer.URL, resp, err
+		}
+		i++
 	}
-	return signServer.URL, resp, err
 }
 
 func (c *SignClient) requestWebSocket(signServer *config.SignServer, action string, data map[string]string) ([]byte, error) {
@@ -306,7 +314,6 @@ func (c *SignClient) requestWebSocket(signServer *config.SignServer, action stri
 		c.requests[echoUUID] = responseChan
 	}
 	c.requestMu.Unlock()
-
 	if err != nil {
 		_ = c.ws.Close()
 		c.ws = nil // Reset connection
@@ -500,21 +507,14 @@ func (c *SignClient) Sign(seq uint64, uin string, cmd string, buff []byte) (sign
 			log.Warn("too many tried sign")
 			return nil, nil, nil, errors.New("too many tried")
 		}
-		sign, extra, token, err = c.signRequest(seq, uin, cmd, buff)
 		cs, e := c.manager.GetAvailableSignServer()
 		if e != nil || cs == nil {
 			log.Warn("nil sign-server")
 			return sign, extra, token, errors.New("nil sign-server")
 		}
+		sign, extra, token, err = c.signRequest(seq, uin, cmd, buff)
 		if err != nil {
 			log.Warnf("Error getting sso sign: %v. server: %v", err, cs.URL)
-		}
-		if err == nil && len(sign) == 0 {
-			log.Debugf("Requesting sign: cmd=%v, qua=%v, buff=%v", seq, cmd, hex.EncodeToString(buff))
-			log.Debugf("Response: sign=%v, extra=%v, token=%v",
-				hex.EncodeToString(sign), hex.EncodeToString(extra), hex.EncodeToString(token))
-			log.Warn("Empty sign received, re-registering instance")
-			c.signRegister()
 			continue
 		}
 		break

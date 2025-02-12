@@ -963,6 +963,11 @@ func (bot *CQBot) uploadForwardElement(m gjson.Result, target int64, sourceType 
 	return builder.Main(convertMessage(m))
 }
 
+func (bot *CQBot) CQSendIntimateSpaceSign() global.MSG {
+	bot.Client.SendIntimateSpaceSign() //TEST
+	return OK(nil)
+}
+
 func (bot *CQBot) CQSetGroupReactionMessage(msgID int64, iconId string, iconType int64, enable bool) global.MSG {
 	m, err := db.GetGroupMessageByGlobalID(int32(msgID))
 	if err != nil {

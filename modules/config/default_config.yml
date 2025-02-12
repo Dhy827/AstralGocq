@@ -67,7 +67,7 @@ account: # 账号相关
   # 否则会在达到指定次数后 **退出** 主程序
   max-check-count: 0
   # 签名服务请求超时时间(s)
-  sign-server-timeout: 60
+  sign-server-timeout: 15
   # 如果签名服务器的版本在1.1.0及以下, 请将下面的参数改成true
   # 建议使用 1.1.6 以上版本，低版本普遍半个月冻结一次
   is-below-110: false

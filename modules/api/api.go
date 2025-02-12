@@ -36,6 +36,8 @@ func (c *Caller) call(action string, spec *onebot.Spec, p Getter) global.MSG {
 			p0 := p.Get("group_id").Int()
 			p1 := p.Get("messages")
 			return c.bot.CQSendGroupForwardMessage(p0, p1)
+		case "send_intimate_space_sign":
+			return c.bot.CQSendIntimateSpaceSign()
 		case "set_group_reaction":
 			p0 := p.Get("message_id").Int()
 			p1 := p.Get("icon_id").String()
