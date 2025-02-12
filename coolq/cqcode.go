@@ -561,6 +561,9 @@ func (bot *CQBot) voice(elem msg.Element) (m any, err error) {
 	if os.IsNotExist(err) && u != "" {
 		cacheFile := path.Join(global.VoicePath, f)
 		_, err = os.Stat(cacheFile)
+		if err != nil {
+			log.Warnf("语音文件 %v 访问失败: %v", u, err)
+		}
 		err = download.Request{URL: u}.WriteToFile(cacheFile)
 		if err != nil {
 			log.Warnf("语音文件 %v 下载失败: %v", u, err)
@@ -584,6 +587,9 @@ func (bot *CQBot) voice(elem msg.Element) (m any, err error) {
 	}
 	if voiceTime == 0 {
 		voiceTime, err = global.GetSilkFileDuration(bytes.NewReader(data), 20)
+		if err != nil {
+			log.Warnf("语音文件 %v 无法分析它的真实语音长度: %v", u, err)
+		}
 	}
 	return &msg.LocalVoice{Data: data, During: int32(voiceTime)}, nil
 }

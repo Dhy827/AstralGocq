@@ -963,19 +963,20 @@ func (bot *CQBot) uploadForwardElement(m gjson.Result, target int64, sourceType 
 	return builder.Main(convertMessage(m))
 }
 
+// CQSendIntimateSpaceSign 签到情侣空间（开发中）
 func (bot *CQBot) CQSendIntimateSpaceSign() global.MSG {
 	bot.Client.SendIntimateSpaceSign() //TEST
 	return OK(nil)
 }
 
-func (bot *CQBot) CQSetGroupReactionMessage(msgID int64, iconId string, iconType int64, enable bool) global.MSG {
+func (bot *CQBot) CQSetGroupReactionMessage(msgID int64, iconID string, iconType int64, enable bool) global.MSG {
 	m, err := db.GetGroupMessageByGlobalID(int32(msgID))
 	if err != nil {
 		return Failed(100, "MSG_NOT_FOUND", "消息不存在")
 	}
 	groupCode := m.GroupCode
 	seq := m.Attribute.MessageSeq
-	_, err = bot.Client.SetGroupReaction(groupCode, seq, iconId, int32(iconType), enable)
+	_, err = bot.Client.SetGroupReaction(groupCode, seq, iconID, int32(iconType), enable)
 	action := "取消"
 	if enable {
 		action = "设置"
@@ -986,10 +987,10 @@ func (bot *CQBot) CQSetGroupReactionMessage(msgID int64, iconId string, iconType
 		groupName = groupImpl.Name
 	}
 	if err != nil {
-		log.Warnf("%v群 %v(%v) 的反应消息 (seq %v, iconId %v, iconType %v) 消息失败: 参数可能有问题.", action, groupName, groupCode, seq, iconId, iconType)
+		log.Warnf("%v群 %v(%v) 的反应消息 (seq %v, iconID %v, iconType %v) 消息失败: 参数可能有问题.", action, groupName, groupCode, seq, iconID, iconType)
 		return Failed(100, "SEND_MSG_API_ERROR", "请参考 go-cqhttp 端输出")
 	}
-	log.Infof("%v群 %v(%v) 的反应消息 (seq %v, iconId %v, iconType %v)", action, groupName, groupCode, seq, iconId, iconType)
+	log.Infof("%v群 %v(%v) 的反应消息 (seq %v, iconID %v, iconType %v)", action, groupName, groupCode, seq, iconID, iconType)
 	return OK(global.MSG{
 		"message_id":  msgID,
 		"group_id":    groupCode,

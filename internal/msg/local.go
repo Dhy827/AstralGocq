@@ -48,7 +48,7 @@ type LocalVoice struct {
 	Name   string
 	Md5    []byte
 	Size   int32
-	Url    string
+	URL    string
 	Data   []byte
 	During int32
 }
