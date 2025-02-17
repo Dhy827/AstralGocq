@@ -355,7 +355,7 @@ func (c *SignClient) listenResponses() {
 		// ReadJSON in a function that sets c.ws to nil and panics on error
 		err := func() error {
 			defer func() {
-				recover()
+				_ = recover()
 			}()
 			err := c.ws.ReadJSON(&response)
 			if err != nil {
