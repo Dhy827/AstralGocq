@@ -291,3 +291,7 @@ Astral-Gocq 兼容 [OneBot-v11](https://github.com/botuniverse/onebot-11) 绝大
 ## 性能
 
 在关闭数据库的情况下, 加载 25 个好友 128 个群运行 24 小时后内存使用为 15MB 左右. 开启数据库后内存使用将根据消息量增加 10-20MB, 如果系统内存小于 128M 建议关闭数据库使用.
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ProtocolScience/AstralGocq&type=Date)](https://star-history.com/#ProtocolScience/AstralGocq&Date)
