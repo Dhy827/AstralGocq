@@ -150,7 +150,7 @@ func runWSServer(b *coolq.CQBot, node yaml.Node) {
 		uri, err := url.Parse(conf.Address)
 		if err == nil && uri.Scheme != "" {
 			network = uri.Scheme
-			address = uri.Host + uri.Path
+			address = fmt.Sprintf("%s:%s", uri.Host, uri.Port())
 		}
 	}
 	s := &webSocketServer{
