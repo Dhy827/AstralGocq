@@ -207,6 +207,7 @@ func toElements(e []message.IMessageElement, source message.Source) (r []msg.Ele
 			default:
 				data := pairs{
 					{K: "file", V: hex.EncodeToString(o.Md5) + ".image"},
+					{K: "subType", V: strconv.FormatInt(int64(o.ImageBizType), 10)},
 					{K: "url", V: o.Url},
 				}
 				m = msg.Element{
@@ -376,7 +377,7 @@ func ToMessageContent(e []message.IMessageElement, source message.Source) (r []g
 					"data": data,
 				}
 			default:
-				data := global.MSG{"file": hex.EncodeToString(o.Md5) + ".image", "url": o.Url}
+				data := global.MSG{"file": hex.EncodeToString(o.Md5) + ".image", "url": o.Url, "subType": uint32(o.ImageBizType)}
 				m = global.MSG{
 					"type": "image",
 					"data": data,

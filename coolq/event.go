@@ -712,6 +712,7 @@ func (bot *CQBot) checkMedia(e []message.IMessageElement, _ int64) { //sourceID 
 					Height:       i.Height,
 					BusinessType: i.BusinessType,
 					ImageType:    i.ImageType,
+					ImageBizType: uint32(i.ImageBizType),
 				},
 			})
 		case *message.ShortVideoElement:
