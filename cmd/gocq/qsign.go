@@ -274,9 +274,9 @@ func (c *SignClient) requestSignServer(action string, data map[string]string) (s
 			c.manager.IncrementErrorCount()
 			signServer = &base.SignServers[0]
 		}
-		data["key"] = signServer.Key
-		data["uin"] = strconv.FormatInt(base.Account.Uin, 10)
 
+		data["auth"] = signServer.Key
+		data["uin"] = strconv.FormatInt(base.Account.Uin, 10)
 		data["qua"] = device.Protocol.Version().QUA
 		data["android_id"] = utils.B2S(device.AndroidId)
 		data["guid"] = hex.EncodeToString(device.Guid)
